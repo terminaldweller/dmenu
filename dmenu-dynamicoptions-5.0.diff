@@ -1,0 +1,92 @@
+diff --git a/dmenu.1 b/dmenu.1
+index 323f93c..1ae3fe3 100644
+--- a/dmenu.1
++++ b/dmenu.1
+@@ -22,6 +22,8 @@ dmenu \- dynamic menu
+ .IR color ]
+ .RB [ \-w
+ .IR windowid ]
++.RB [ \-dy
++.IR command ]
+ .P
+ .BR dmenu_run " ..."
+ .SH DESCRIPTION
+@@ -80,6 +82,9 @@ prints version information to stdout, then exits.
+ .TP
+ .BI \-w " windowid"
+ embed into windowid.
++.TP
++.BI \-dy " command"
++runs command whenever input changes to update menu items.
+ .SH USAGE
+ dmenu is completely controlled by the keyboard.  Items are selected using the
+ arrow keys, page up, page down, home, and end.
+diff --git a/dmenu.c b/dmenu.c
+index 65f25ce..6780122 100644
+--- a/dmenu.c
++++ b/dmenu.c
+@@ -519,14 +571,14 @@ paste(void)
+ }
+ 
+ static void
+-readstdin(void)
++readstdin(FILE* stream)
+ {
+ 	char buf[sizeof text], *p;
+ 	size_t i, imax = 0, size = 0;
+ 	unsigned int tmpmax = 0;
+ 
+ 	/* read each line from stdin and add it to the item list */
+-	for (i = 0; fgets(buf, sizeof buf, stdin); i++) {
++	for (i = 0; fgets(buf, sizeof buf, stream); i++) {
+ 		if (i + 1 >= size / sizeof *items)
+ 			if (!(items = realloc(items, (size += BUFSIZ))))
+ 				die("cannot realloc %u bytes:", size);
+@@ -544,7 +596,7 @@ readstdin(void)
+ 	if (items)
+ 		items[i].text = NULL;
+ 	inputw = items ? TEXTW(items[imax].text) : 0;
+-	lines = MIN(lines, i);
++	lines = MIN(max_lines, i);
+ }
+ 
+ static void
+@@ -690,7 +742,8 @@ static void
+ usage(void)
+ {
+ 	fputs("usage: dmenu [-bfiv] [-l lines] [-p prompt] [-fn font] [-m monitor]\n"
+-	      "             [-nb color] [-nf color] [-sb color] [-sf color] [-w windowid]\n", stderr);
++	      "             [-nb color] [-nf color] [-sb color] [-sf color] [-w windowid]\n"
++	      "             [-dy command]\n", stderr);
+ 	exit(1);
+ }
+ 
+@@ -733,6 +786,8 @@ main(int argc, char *argv[])
+ 			colors[SchemeSel][ColFg] = argv[++i];
+ 		else if (!strcmp(argv[i], "-w"))   /* embedding window id */
+ 			embed = argv[++i];
++		else if (!strcmp(argv[i], "-dy"))  /* dynamic command to run */
++			dynamic = argv[++i] && *argv[i] ? argv[i] : NULL;
+ 		else
+ 			usage();
+ 
+@@ -757,11 +812,14 @@ main(int argc, char *argv[])
+ 		die("pledge");
+ #endif
+ 
++	max_lines = lines;
+ 	if (fast && !isatty(0)) {
+ 		grabkeyboard();
+-		readstdin();
++		if (!dynamic)
++			readstdin(stdin);
+ 	} else {
+-		readstdin();
++		if (!dynamic)
++			readstdin(stdin);
+ 		grabkeyboard();
+ 	}
+ 	setup();
+-- 
+2.34.1
+

@@ -21,6 +21,8 @@
 #include "drw.h"
 #include "util.h"
 
+#include <fribidi.h>
+
 /* macros */
 #define INTERSECT(x, y, w, h, r)                                               \
   (MAX(0, MIN((x) + (w), (r).x_org + (r).width) - MAX((x), (r).x_org)) *       \
@@ -50,6 +52,7 @@ struct item {
 
 static char numbers[NUMBERSBUFSIZE] = "";
 static char text[BUFSIZ] = "";
+static char fribidi_text[BUFSIZ] = "";
 static char *embed;
 static char separator;
 static int separator_greedy;
@@ -149,6 +152,23 @@ static char *cistrstr(const char *h, const char *n) {
   return NULL;
 }
 
+static void apply_fribidi(char *str) {
+  FriBidiStrIndex len = strlen(str);
+  FriBidiChar logical[BUFSIZ];
+  FriBidiChar visual[BUFSIZ];
+  FriBidiParType base = FRIBIDI_PAR_ON;
+  FriBidiCharSet charset;
+  fribidi_boolean result;
+
+  fribidi_text[0] = 0;
+  if (len > 0) {
+    charset = fribidi_parse_charset("UTF-8");
+    len = fribidi_charset_to_unicode(charset, str, len, logical);
+    result = fribidi_log2vis(logical, len, &base, visual, NULL, NULL, NULL);
+    len = fribidi_unicode_to_charset(charset, visual, len, fribidi_text);
+  }
+}
+
 static void drawhighlights(struct item *item, int x, int y, int maxw) {
   int i, indent;
   char *highlight;
@@ -189,7 +209,8 @@ static int drawitem(struct item *item, int x, int y, int w) {
   else
     drw_setscheme(drw, scheme[SchemeNorm]);
 
-  r = drw_text(drw, x, y, w, bh, lrpad / 2, item->text, 0);
+  apply_fribidi(item->text);
+  r = drw_text(drw, x, y, w, bh, lrpad / 2, fribidi_text, 0);
   drawhighlights(item, x, y, w);
   return r;
 }
@@ -222,7 +243,9 @@ static void drawmenu(void) {
   /* draw input field */
   w = (lines > 0 || !matches) ? mw - x : inputw;
   drw_setscheme(drw, scheme[SchemeNorm]);
-  drw_text(drw, x, 0, w, bh, lrpad / 2, text, 0);
+  /* drw_text(drw, x, 0, w, bh, lrpad / 2, text, 0); */
+  apply_fribidi(text);
+  drw_text(drw, x, 0, w, bh, lrpad / 2, fribidi_text, 0);
 
   curpos = TEXTW(text) - TEXTW(&text[cursor]);
   if ((curpos += lrpad / 2 - 1) < w) {

@@ -1,0 +1,17 @@
+diff --git a/dmenu.1 b/dmenu.1
+index 323f93c..d0a734a 100644
+--- a/dmenu.1
++++ b/dmenu.1
+@@ -47,8 +49,11 @@ is faster, but will lock up X until stdin reaches end\-of\-file.
+ .B \-i
+ dmenu matches menu items case insensitively.
+ .TP
++.BI \-g " columns"
++dmenu lists items in a grid with the given number of columns.
++.TP
+ .BI \-l " lines"
+-dmenu lists items vertically, with the given number of lines.
++dmenu lists items in a grid with the given number of lines.
+ .TP
+ .BI \-m " monitor"
+ dmenu is displayed on the monitor number supplied. Monitor numbers are starting

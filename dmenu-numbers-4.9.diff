@@ -1,0 +1,34 @@
+From 61abc60dbfaa8ec63fcd176307308aee88a19e32 Mon Sep 17 00:00:00 2001
+From: Miles Alan <m@milesalan.com>
+Date: Sat, 10 Aug 2019 17:20:08 -0500
+Subject: [PATCH] Display number of matched and total items in top right corner
+
+---
+ dmenu.c | 25 +++++++++++++++++++++++--
+ 1 file changed, 23 insertions(+), 2 deletions(-)
+
+diff --git a/dmenu.c b/dmenu.c
+index 6b8f51b..98c5810 100644
+--- a/dmenu.c
++++ b/dmenu.c
+@@ -165,13 +184,15 @@ drawmenu(void)
+ 		}
+ 		x += w;
+ 		for (item = curr; item != next; item = item->right)
+-			x = drawitem(item, x, 0, MIN(TEXTW(item->text), mw - x - TEXTW(">")));
++			x = drawitem(item, x, 0, MIN(TEXTW(item->text), mw - x - TEXTW(">") - TEXTW(numbers)));
+ 		if (next) {
+ 			w = TEXTW(">");
+ 			drw_setscheme(drw, scheme[SchemeNorm]);
+-			drw_text(drw, mw - w, 0, w, bh, lrpad / 2, ">", 0);
++			drw_text(drw, mw - w - TEXTW(numbers), 0, w, bh, lrpad / 2, ">", 0);
+ 		}
+ 	}
++	drw_setscheme(drw, scheme[SchemeNorm]);
++	drw_text(drw, mw - TEXTW(numbers), 0, TEXTW(numbers), bh, lrpad / 2, numbers, 0);
+ 	drw_map(drw, win, 0, 0, mw, mh);
+ }
+ 
+-- 
+2.19.2
+
